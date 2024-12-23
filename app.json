@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HelloWorld",
-    "slug": "expo-template-default",
+    "name": "3ts",
+    "slug": "3ts",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,13 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thodorishhorg.app3ts"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.thodorishhorg.app3ts"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +38,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8f8e0793-d75f-4ca4-b1e7-6aef0de6c9f6"
+      }
+    },
+    "owner": "thodorishh-org",
+    "updates": {
+      "url": "https://u.expo.dev/8f8e0793-d75f-4ca4-b1e7-6aef0de6c9f6"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
