@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const startState = Array(9).fill(null);
 
 const Game = () => {
   const [squares, setSquares] = useState(startState);
   const [turn, setTurn] = useState(true); //true is X
-  const [winner, setWinner] = useState("");
-
+  let winner: null = null;
   const calcWinner = () => {
     const lines = [
       [0, 1, 2],
@@ -27,13 +25,10 @@ const Game = () => {
         squares[a] === squares[b] &&
         squares[a] === squares[c]
       ) {
-        setWinner(squares[a]);
-        console.log(squares[a]);
-        return;
+        return squares[a];
       }
     }
     if (squares.every((square) => square)) {
-      setWinner("draw");
       console.log("draw");
     }
   };
@@ -65,21 +60,28 @@ const Game = () => {
   };
 
   const handlePress = (index: number) => {
-    if (!squares[index] && winner == "") {
-      const newTable = [...squares];
+    if (!squares[index] && !calcWinner()) {
+      const newTable = squares.slice();
       newTable[index] = turn ? "X" : "O";
       setSquares(newTable);
       setTurn(!turn);
-      calcWinner();
+    }
+    const winner = calcWinner();
+    if (winner) {
+      alert(winner);
     }
   };
   const reset = () => {
     setSquares(startState);
     setTurn(true);
-    setWinner("");
   };
 
-  return <SafeAreaView style={styles.container}>{board(squares)}</SafeAreaView>;
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>{winner}</Text>
+      <View>{board(squares)}</View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -100,8 +102,8 @@ const styles = StyleSheet.create({
     margin: 5,
     fontSize: 24,
     fontWeight: "bold",
-    height: 80,
-    width: 80,
+    height: 100,
+    width: 100,
     alignItems: "center",
     justifyContent: "center",
   },
