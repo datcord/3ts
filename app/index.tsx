@@ -6,8 +6,8 @@ const startState = Array(9).fill(null);
 const Game = () => {
   const [squares, setSquares] = useState(startState);
   const [turn, setTurn] = useState(true); //true is X
-  let winner: null = null;
-  const calcWinner = () => {
+  const [winner, setWinner] = useState(null);
+  const calcWinner = (csquares: any[]) => {
     const lines = [
       [0, 1, 2],
       [3, 4, 5],
@@ -21,15 +21,15 @@ const Game = () => {
     for (let i = 0; i < lines.length; i++) {
       const [a, b, c] = lines[i];
       if (
-        squares[a] &&
-        squares[a] === squares[b] &&
-        squares[a] === squares[c]
+        csquares[a] &&
+        csquares[a] === csquares[b] &&
+        csquares[a] === csquares[c]
       ) {
-        return squares[a];
+        return csquares[a];
       }
     }
-    if (squares.every((square) => square)) {
-      console.log("draw");
+    if (csquares.every((square) => square)) {
+      return "draw";
     }
   };
 
@@ -60,26 +60,36 @@ const Game = () => {
   };
 
   const handlePress = (index: number) => {
-    if (!squares[index] && !calcWinner()) {
+    if (!squares[index] && !calcWinner(squares)) {
       const newTable = squares.slice();
       newTable[index] = turn ? "X" : "O";
       setSquares(newTable);
       setTurn(!turn);
-    }
-    const winner = calcWinner();
-    if (winner) {
-      alert(winner);
+      setWinner(calcWinner(newTable));
     }
   };
   const reset = () => {
     setSquares(startState);
     setTurn(true);
+    setWinner(null);
   };
-
+  let status;
+  if (winner) {
+    status = "Winner: " + winner;
+  } else {
+    status = "Next player: " + (turn ? "X" : "O");
+  }
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{winner}</Text>
+      <View>
+        <Text style={styles.yellowText}>{status}</Text>
+      </View>
       <View>{board(squares)}</View>
+      <TouchableOpacity style={styles.reset}>
+        <Text style={styles.darkText} onPress={reset}>
+          Restart
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -94,13 +104,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  reset: {
+    height: 50,
+    width: 100,
+    margin: 5,
+    borderRadius: 20,
+    backgroundColor: "#ffd33d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  yellowText: {
+    color: "#ffd33d",
+    fontSize: 25,
+  },
+  darkText: {
+    color: "#25292e",
+    fontSize: 25,
+  },
   text: {
     color: "#fff",
+    fontSize: 30,
   },
   square: {
+    borderRadius: 10,
     backgroundColor: "black",
     margin: 5,
-    fontSize: 24,
     fontWeight: "bold",
     height: 100,
     width: 100,
