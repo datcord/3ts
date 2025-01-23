@@ -1,13 +1,56 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const startState = Array(9).fill(null);
+
+type ModeSelectionProps = {
+  onModeSelect: (mode: "1player" | "2player") => void;
+  onResetScores: () => void;
+};
+
+const ModeSelection = ({ onModeSelect, onResetScores }: ModeSelectionProps) => {
+  return (
+    <View style={[styles.container, { pointerEvents: "auto" }]}>
+      <Image
+        source={require("../assets/images/splash.png")}
+        style={styles.logo}
+      />
+      <Text style={styles.yellowText}>Select Game Mode</Text>
+      <TouchableOpacity
+        style={[styles.reset, { pointerEvents: "auto" }]}
+        onPress={() => onModeSelect("1player")}
+      >
+        <Text style={styles.darkText}>Single Player</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.reset, { pointerEvents: "auto" }]}
+        onPress={() => onModeSelect("2player")}
+      >
+        <Text style={styles.darkText}>Two Players</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.reset, { pointerEvents: "auto" }]}
+        onPress={onResetScores}
+      >
+        <Text style={styles.darkText}>Reset Scores</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+type GameMode = "1player" | "2player" | null;
+
+type ScoreCounter = {
+  X: number;
+  O: number;
+};
 
 const Game = () => {
   const [squares, setSquares] = useState(startState);
   const [turn, setTurn] = useState(true); //true is X
   const [winner, setWinner] = useState(null);
-  const [mode, setMode] = useState("2player"); //1player with computer
+  const [mode, setMode] = useState<GameMode>(null);
+  const [scores, setScores] = useState<ScoreCounter>({ X: 0, O: 0 });
   const calcWinner = (csquares: any[]) => {
     const lines = [
       [0, 1, 2],
@@ -35,20 +78,13 @@ const Game = () => {
   };
   const ModeButton = () => {
     const modePress = () => {
-      if (mode == "1player") {
-        setMode("2player");
-        reset();
-        return;
-      } else {
-        setMode("1player");
-        reset();
-        return;
-      }
+      setMode(null); // Reset to mode selection
+      reset();
     };
 
     return (
       <TouchableOpacity style={styles.reset} onPress={modePress}>
-        <Text style={styles.darkText}>{mode}</Text>
+        <Text style={styles.darkText}>Change Mode</Text>
       </TouchableOpacity>
     );
   };
@@ -80,16 +116,57 @@ const Game = () => {
   };
 
   const compTurn = (table: any[]) => {
-    while (!turn) {
-      let randomPlay = Math.floor(Math.random() * 9);
-      if (!table[randomPlay] && !calcWinner(table)) {
-        const newTable = table.slice();
-        newTable[randomPlay] = "O";
-        setSquares(newTable);
-        setTurn(true);
-        setWinner(calcWinner(newTable));
-        return;
+    const lines = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    // Find empty squares
+    const emptySquares = table.reduce((acc: number[], curr, idx) => {
+      if (!curr) acc.push(idx);
+      return acc;
+    }, []);
+
+    if (emptySquares.length > 0 && !calcWinner(table)) {
+      // Check for potential winning moves or blocks with 50% probability
+      const shouldBlock = Math.random() < 0.5;
+
+      if (shouldBlock) {
+        // Check each line for two X's and an empty square
+        for (const line of lines) {
+          const [a, b, c] = line;
+          const squares = [table[a], table[b], table[c]];
+          const xCount = squares.filter((s) => s === "X").length;
+          const emptyCount = squares.filter((s) => !s).length;
+
+          if (xCount === 2 && emptyCount === 1) {
+            // Found a potential winning line for X, block it
+            const blockIndex = line[squares.findIndex((s) => !s)];
+            const newTable = table.slice();
+            newTable[blockIndex] = "O";
+            setSquares(newTable);
+            setTurn(true);
+            setWinner(calcWinner(newTable));
+            return;
+          }
+        }
       }
+
+      // If no blocking needed or random chance didn't trigger, make a random move
+      const randomIndex = Math.floor(Math.random() * emptySquares.length);
+      const computerMove = emptySquares[randomIndex];
+
+      const newTable = table.slice();
+      newTable[computerMove] = "O";
+      setSquares(newTable);
+      setTurn(true);
+      setWinner(calcWinner(newTable));
     }
   };
   const handlePress = (index: number) => {
@@ -102,7 +179,7 @@ const Game = () => {
         setWinner(calcWinner(newTable));
       }
     } else {
-      if (!squares[index] && !calcWinner(squares)) {
+      if (!squares[index] && !calcWinner(squares) && turn) {
         const newTable = squares.slice();
         newTable[index] = "X";
         setSquares(newTable);
@@ -115,20 +192,51 @@ const Game = () => {
     }
   };
   const reset = () => {
+    if (winner && winner !== "draw") {
+      setScores((prev) => ({
+        ...prev,
+        [winner]: prev[winner] + 1,
+      }));
+    }
     setSquares(startState);
     setTurn(true);
     setWinner(null);
   };
 
+  // If no mode is selected, show mode selection
+  if (!mode) {
+    return (
+      <ModeSelection
+        onModeSelect={(selectedMode) => setMode(selectedMode)}
+        onResetScores={() => setScores({ X: 0, O: 0 })}
+      />
+    );
+  }
+
   let status;
   if (winner) {
-    status = "Winner: " + winner;
+    status = winner === "draw" ? "It's a Draw!" : "Winner: " + winner;
   } else {
     status = "Next player: " + (turn ? "X" : "O");
   }
+
+  const ScoreBoard = () => (
+    <View style={styles.scoreBoard}>
+      <Text style={styles.yellowText}>
+        {mode === "1player" ? "Player: " : "Player X: "}
+        {scores.X}
+      </Text>
+      <Text style={styles.yellowText}>
+        {mode === "1player" ? "Computer: " : "Player O: "}
+        {scores.O}
+      </Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View>{ModeButton()}</View>
+      <ScoreBoard />
       <View>
         <Text style={styles.yellowText}>{status}</Text>
       </View>
@@ -153,9 +261,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   reset: {
-    height: 50,
-    width: 100,
+    height: "auto",
+    width: "auto",
     margin: 5,
+    padding: 10,
     borderRadius: 20,
     backgroundColor: "#ffd33d",
     alignItems: "center",
@@ -182,6 +291,25 @@ const styles = StyleSheet.create({
     width: 100,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modeSelectionContainer: {
+    gap: 20,
+    alignItems: "center",
+  },
+  scoreBoard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%",
+    marginVertical: 10,
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+    resizeMode: "contain",
+    borderRadius: 100,
+    overflow: "hidden",
+    backgroundColor: "#ffd33d",
   },
 });
 export default Game;
