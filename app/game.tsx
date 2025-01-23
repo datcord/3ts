@@ -119,6 +119,7 @@ const Game = () => {
     setTurn(true);
     setWinner(null);
   };
+
   let status;
   if (winner) {
     status = "Winner: " + winner;
