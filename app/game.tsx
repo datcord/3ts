@@ -7,7 +7,9 @@ type ModeSelectionProps = {
   onModeSelect: (mode: "1player" | "2player") => void;
   onResetScores: () => void;
 };
-
+type DifficultySelectionProps = {
+  onDifficultySelect: (difficulty: "easy" | "medium" | "hard") => void;
+};
 const ModeSelection = ({ onModeSelect, onResetScores }: ModeSelectionProps) => {
   return (
     <View style={[styles.container, { pointerEvents: "auto" }]}>
@@ -38,8 +40,40 @@ const ModeSelection = ({ onModeSelect, onResetScores }: ModeSelectionProps) => {
   );
 };
 
-type GameMode = "1player" | "2player" | null;
+const DifficultySelection = ({
+  onDifficultySelect,
+}: DifficultySelectionProps) => {
+  return (
+    <View style={styles.container}>
+      <Image
+        source={require("../assets/images/splash.png")}
+        style={styles.logo}
+      />
+      <Text style={styles.yellowText}>Select Game Difficulty</Text>
+      <TouchableOpacity
+        style={styles.reset}
+        onPress={() => onDifficultySelect("easy")}
+      >
+        <Text style={styles.darkText}>Easy</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.reset}
+        onPress={() => onDifficultySelect("medium")}
+      >
+        <Text style={styles.darkText}>Medium</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.reset}
+        onPress={() => onDifficultySelect("hard")}
+      >
+        <Text style={styles.darkText}>Hard</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
+type GameMode = "1player" | "2player" | null;
+type Difficulty = "easy" | "medium" | "hard" | null;
 type ScoreCounter = {
   X: number;
   O: number;
@@ -51,6 +85,7 @@ const Game = () => {
   const [winner, setWinner] = useState(null);
   const [mode, setMode] = useState<GameMode>(null);
   const [scores, setScores] = useState<ScoreCounter>({ X: 0, O: 0 });
+  const [difficulty, setDifficulty] = useState<Difficulty>(null);
   const calcWinner = (csquares: any[]) => {
     const lines = [
       [0, 1, 2],
@@ -80,6 +115,7 @@ const Game = () => {
     const modePress = () => {
       setMode(null); // Reset to mode selection
       reset();
+      setDifficulty(null);
     };
 
     return (
@@ -135,8 +171,43 @@ const Game = () => {
 
     if (emptySquares.length > 0 && !calcWinner(table)) {
       // Check for potential winning moves or blocks with 50% probability
-      const shouldBlock = Math.random() < 0.5;
+      var shouldBlock: any;
+      var shouldWin: any;
+      switch (difficulty) {
+        case "easy":
+          shouldBlock = Math.random() < 0.5;
+          shouldWin = Math.random() < 0.5;
+          break;
+        case "medium":
+          shouldBlock = Math.random() < 0.75;
+          shouldWin = Math.random() < 0.75;
+          break;
+        case "hard":
+          shouldBlock = 1;
+          shouldWin = Math.random();
+          break;
+      }
 
+      if (shouldWin) {
+        // Check each line for two X's and an empty square
+        for (const line of lines) {
+          const [a, b, c] = line;
+          const squares = [table[a], table[b], table[c]];
+          const OCount = squares.filter((s) => s === "O").length;
+          const emptyCount = squares.filter((s) => !s).length;
+
+          if (OCount === 2 && emptyCount === 1) {
+            // Found a potential winning line for X, block it
+            const blockIndex = line[squares.findIndex((s) => !s)];
+            const newTable = table.slice();
+            newTable[blockIndex] = "O";
+            setSquares(newTable);
+            setTurn(true);
+            setWinner(calcWinner(newTable));
+            return;
+          }
+        }
+      }
       if (shouldBlock) {
         // Check each line for two X's and an empty square
         for (const line of lines) {
@@ -157,7 +228,6 @@ const Game = () => {
           }
         }
       }
-
       // If no blocking needed or random chance didn't trigger, make a random move
       const randomIndex = Math.floor(Math.random() * emptySquares.length);
       const computerMove = emptySquares[randomIndex];
@@ -212,7 +282,15 @@ const Game = () => {
       />
     );
   }
-
+  if (mode === "1player" && !difficulty) {
+    return (
+      <DifficultySelection
+        onDifficultySelect={(selectedDifficulty) =>
+          setDifficulty(selectedDifficulty)
+        }
+      />
+    );
+  }
   let status;
   if (winner) {
     status = winner === "draw" ? "It's a Draw!" : "Winner: " + winner;
@@ -291,10 +369,6 @@ const styles = StyleSheet.create({
     width: 100,
     alignItems: "center",
     justifyContent: "center",
-  },
-  modeSelectionContainer: {
-    gap: 20,
-    alignItems: "center",
   },
   scoreBoard: {
     flexDirection: "row",
