@@ -179,12 +179,12 @@ const Game = () => {
           shouldWin = Math.random() < 0.5;
           break;
         case "medium":
-          shouldBlock = Math.random() < 0.75;
-          shouldWin = Math.random() < 0.75;
+          shouldBlock = Math.random();
+          shouldWin = Math.random();
           break;
         case "hard":
           shouldBlock = 1;
-          shouldWin = Math.random();
+          shouldWin = 1;
           break;
       }
 
